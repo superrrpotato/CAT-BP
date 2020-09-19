@@ -79,4 +79,4 @@ for i in range(2,99):
                     ranking[cal_dist] = spike_distance_v4(case.copy(),cal_spike_train,mem_case.copy())
                 v4_rank = np.argsort(ranking).tolist().index(new_pattern)
                 spike_transfer_matrix_v4[ori_pattern, v4_rank] += 1
-    np.save('figs/spike_transfer_matrix_v4'+str(i), spike_transfer_matrix_v4)
+    np.save('figs/spike_transfer_matrix_v4_'+str(i), spike_transfer_matrix_v4)
