@@ -27,6 +27,31 @@ def find_smallest_one(current_output, membrane_potential):
         near_by = near_by & changes
     return new_output
 
+# This function is used to detect changes which are spike adding/removing
+# Following the same idea like Hamming distance/Damerau-Levenshtein Distance, the "Spikes distance" 
+# between two binary strings with equal length is now defined as the following:
+# 1. It measures the minimum number of "moves" required to transform one string into the other.
+# 2. The moves include:
+#     1) Flip (spikes generate | vanish)
+#     2) Swap neighbors (spikes move)
+def classify_changes(str1, str2):
+    # str1 is the original spike sequence
+    # str2 is the new spike sequence
+    time_steps = len(str1[0,0,0,0])
+    paired_flag = False # prevent pairs overlap
+    dim1 = [val for val in list(range(len(str1))) for i in range(len(str1[0]))] 
+    dim2 = list(range(len(str1[0])))*len(str1)
+    dim3 = dim4 = [0]*len(dim1)
+    changes = str1^str2
+    for i in range(time_steps-1):
+        dim5 = torch.tensor([i]*len(dim1))
+        spike_move = (changes[dim1,dim2,dim3,dim4,dim5] & changes[dim1,dim2,dim3,dim4,dim5+1] & \
+                      (str1[dim1,dim2,dim3,dim4,dim5+1] ^ str1[dim1,dim2,dim3,dim4,dim5]) & \
+                      (str2[dim1,dim2,dim3,dim4,dim5+1] ^ str2[dim1,dim2,dim3,dim4,dim5]))
+        changes[dim1,dim2,dim3,dim4,dim5] = changes[dim1,dim2,dim3,dim4,dim5] & (~spike_move)
+        changes[dim1,dim2,dim3,dim4,dim5+1] = changes[dim1,dim2,dim3,dim4,dim5+1] & (~spike_move)
+    return changes
+
 def spike_distance_v1(str1, str2):
     # str1 is the original spike sequence
     # str2 is the new spike sequence
