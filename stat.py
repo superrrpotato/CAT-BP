@@ -25,7 +25,6 @@ def find_smallest_one(current_output, membrane_potential):
         mpp = membrane_potential[dim1,dim2,dim3,dim4,dim5] # membrane potential pointer
         near_by = near_by & ((near_by&(nopp==1)&((1<=mpp)&(mpp<1.8)))|\
                     (near_by&(nopp==0)&((0.2<mpp)&(mpp<1))))
-        near_by = near_by & changes
     return dist, new_output
 
 # This function is used to detect changes which are spike adding/removing
