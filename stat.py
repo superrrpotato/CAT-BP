@@ -1,4 +1,32 @@
 import numpy as np
+import torch
+
+# This function finds the nearest neighbor under the metric: distance_v3
+# The two inputs are the current time step's spike train output, and the current membrane potential
+# The return valur is the nearest neighbor
+# Expecting data format is torch.tensor
+def find_smallest_one(current_output, membrane_potential):
+    time_steps = len(current_output[0,0,0,0])
+    max_dist = 0.2
+    flip_distance = torch.clamp(torch.abs(1-membrane_potential),0,1)
+    sorted_index = torch.argsort(flip_distance)
+    dim1 = [val for val in list(range(len(flip_distance))) for i in range(len(flip_distance[0]))] 
+    dim2 = list(range(len(flip_distance[0])))*len(flip_distance)
+    dim3 = dim4 = [0]*len(dim1)
+    dim5 = sorted_index[:,:,:,:,0].reshape(len(dim1))
+    new_output = current_output.clone().detach()
+    near_by = flip_distance[dim1,dim2,dim3,dim4,dim5]<max_dist
+    while near_by.any() == True:
+        new_output[dim1,dim2,dim3,dim4,dim5]=new_output[dim1,dim2,dim3,dim4,dim5]^near_by
+        near_by = near_by & (dim5!=time_steps-1)
+        dim5 = torch.clamp(dim5+1,0,time_steps-1)
+        nopp = new_output[dim1,dim2,dim3,dim4,dim5-1] # new output previous pointer
+        mpp = membrane_potential[dim1,dim2,dim3,dim4,dim5] # membrane potential pointer
+        changes = (near_by&(nopp==1)&((1<=mpp)&(mpp<1.8)))|\
+                    (near_by&(nopp==0)&((0.2<mpp)&(mpp<1)))
+        near_by = near_by & changes
+    return new_output
+
 def spike_distance_v1(str1, str2):
     # str1 is the original spike sequence
     # str2 is the new spike sequence
