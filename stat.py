@@ -14,6 +14,7 @@ def find_smallest_one(current_output, membrane_potential):
     dim2 = list(range(len(flip_distance[0])))*len(flip_distance)
     dim3 = dim4 = [0]*len(dim1)
     dim5 = sorted_index[:,:,:,:,0].reshape(len(dim1))
+    dist = flip_distance[dim1,dim2,dim3,dim4,dim5].reshape(list(current_output.size()[:-1])+[1])
     new_output = current_output.clone().detach()
     near_by = flip_distance[dim1,dim2,dim3,dim4,dim5]<max_dist
     while near_by.any() == True:
@@ -22,10 +23,10 @@ def find_smallest_one(current_output, membrane_potential):
         dim5 = torch.clamp(dim5+1,0,time_steps-1)
         nopp = new_output[dim1,dim2,dim3,dim4,dim5-1] # new output previous pointer
         mpp = membrane_potential[dim1,dim2,dim3,dim4,dim5] # membrane potential pointer
-        changes = (near_by&(nopp==1)&((1<=mpp)&(mpp<1.8)))|\
-                    (near_by&(nopp==0)&((0.2<mpp)&(mpp<1)))
+        near_by = near_by & ((near_by&(nopp==1)&((1<=mpp)&(mpp<1.8)))|\
+                    (near_by&(nopp==0)&((0.2<mpp)&(mpp<1))))
         near_by = near_by & changes
-    return new_output
+    return dist, new_output
 
 # This function is used to detect changes which are spike adding/removing
 # Following the same idea like Hamming distance/Damerau-Levenshtein Distance, the "Spikes distance" 
