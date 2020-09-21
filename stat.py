@@ -10,12 +10,15 @@ def find_smallest_one(current_output, membrane_potential):
     max_dist = 0.2
     flip_distance = torch.clamp(torch.abs(1-membrane_potential),0,1)
     sorted_index = torch.argsort(flip_distance)
-    dim1 = [val for val in list(range(len(flip_distance))) for i in range(len(flip_distance[0]))] 
-    dim2 = list(range(len(flip_distance[0])))*len(flip_distance)
-    dim3 = dim4 = [0]*len(dim1)
+    dim1 = [val for val in list(range(len(flip_distance))) for i in 
+            range(len(flip_distance[0])*len(flip_distance[0,0])*len(flip_distance[0,0,0]))] 
+    dim2 = [val for val in list(range(len(flip_distance[0]))) for i in 
+            range(len(flip_distance[0,0])*len(flip_distance[0,0,0]))]*len(flip_distance)
+    dim3 = [val for val in list(range(len(flip_distance[0,0]))) for i in 
+            range(len(flip_distance[0,0,0]))]*len(flip_distance)*len(flip_distance[0])
+    dim4 = list(range(len(flip_distance[0,0,0])))*len(flip_distance)*len(flip_distance[0])*len(flip_distance[0,0])
     dim5 = sorted_index[:,:,:,:,0].reshape(len(dim1))
-    dist = flip_distance[dim1,dim2,dim3,dim4,dim5].reshape(list(current_output.size()[:-1])+[1])
-    new_output = current_output.clone().detach()
+    new_output = current_output>0
     near_by = flip_distance[dim1,dim2,dim3,dim4,dim5]<max_dist
     while near_by.any() == True:
         new_output[dim1,dim2,dim3,dim4,dim5]=new_output[dim1,dim2,dim3,dim4,dim5]^near_by
@@ -24,8 +27,8 @@ def find_smallest_one(current_output, membrane_potential):
         nopp = new_output[dim1,dim2,dim3,dim4,dim5-1] # new output previous pointer
         mpp = membrane_potential[dim1,dim2,dim3,dim4,dim5] # membrane potential pointer
         near_by = near_by & ((near_by&(nopp==1)&((1<=mpp)&(mpp<1.8)))|\
-                    (near_by&(nopp==0)&((0.2<mpp)&(mpp<1))))
-    return dist, new_output
+                            (near_by&(nopp==0)&((0.2<mpp)&(mpp<1))))
+    return new_output
 
 # This function is used to detect changes which are spike adding/removing
 # Following the same idea like Hamming distance/Damerau-Levenshtein Distance, the "Spikes distance" 
@@ -39,15 +42,21 @@ def classify_changes(str1, str2):
     # str2 is the new spike sequence
     time_steps = len(str1[0,0,0,0])
     paired_flag = False # prevent pairs overlap
-    dim1 = [val for val in list(range(len(str1))) for i in range(len(str1[0]))] 
-    dim2 = list(range(len(str1[0])))*len(str1)
-    dim3 = dim4 = [0]*len(dim1)
-    changes = str1^str2
+    dim1 = [val for val in list(range(len(str1))) for i in 
+            range(len(str1[0])*len(str1[0,0])*len(str1[0,0,0]))] 
+    dim2 = [val for val in list(range(len(str1[0]))) for i in 
+            range(len(str1[0,0])*len(str1[0,0,0]))]*len(str1)
+    dim3 = [val for val in list(range(len(str1[0,0]))) for i in 
+            range(len(str1[0,0,0]))]*len(str1)*len(str1[0])
+    dim4 = list(range(len(str1[0,0,0])))*len(str1)*len(str1[0])*len(str1[0,0])
+    str1_bool = str1>0
+    str2_bool = str2>0
+    changes = str1_bool^str2_bool
     for i in range(time_steps-1):
         dim5 = torch.tensor([i]*len(dim1))
         spike_move = (changes[dim1,dim2,dim3,dim4,dim5] & changes[dim1,dim2,dim3,dim4,dim5+1] & \
-                      (str1[dim1,dim2,dim3,dim4,dim5+1] ^ str1[dim1,dim2,dim3,dim4,dim5]) & \
-                      (str2[dim1,dim2,dim3,dim4,dim5+1] ^ str2[dim1,dim2,dim3,dim4,dim5]))
+                      (str1_bool[dim1,dim2,dim3,dim4,dim5+1] ^ str1_bool[dim1,dim2,dim3,dim4,dim5]) & \
+                      (str2_bool[dim1,dim2,dim3,dim4,dim5+1] ^ str2_bool[dim1,dim2,dim3,dim4,dim5]))
         changes[dim1,dim2,dim3,dim4,dim5] = changes[dim1,dim2,dim3,dim4,dim5] & (~spike_move)
         changes[dim1,dim2,dim3,dim4,dim5+1] = changes[dim1,dim2,dim3,dim4,dim5+1] & (~spike_move)
     return changes
