@@ -10,13 +10,10 @@ def find_smallest_one(current_output, membrane_potential):
     max_dist = 0.2
     flip_distance = torch.clamp(torch.abs(1-membrane_potential),0,1)
     sorted_index = torch.argsort(flip_distance)
-    dim1 = [val for val in list(range(len(flip_distance))) for i in 
-            range(len(flip_distance[0])*len(flip_distance[0,0])*len(flip_distance[0,0,0]))] 
-    dim2 = [val for val in list(range(len(flip_distance[0]))) for i in 
-            range(len(flip_distance[0,0])*len(flip_distance[0,0,0]))]*len(flip_distance)
-    dim3 = [val for val in list(range(len(flip_distance[0,0]))) for i in 
-            range(len(flip_distance[0,0,0]))]*len(flip_distance)*len(flip_distance[0])
-    dim4 = list(range(len(flip_distance[0,0,0])))*len(flip_distance)*len(flip_distance[0])*len(flip_distance[0,0])
+    dim1 = torch.tensor([val for val in list(range(len(flip_distance))) for i in range(len(flip_distance[0])*len(flip_distance[0,0])*len(flip_distance[0,0,0]))],device=glv.device)
+    dim2 = torch.tensor([val for val in list(range(len(flip_distance[0]))) for i in range(len(flip_distance[0,0])*len(flip_distance[0,0,0]))]*len(flip_distance),device=glv.device)
+    dim3 = torch.tensor([val for val in list(range(len(flip_distance[0,0]))) for i in range(len(flip_distance[0,0,0]))]*len(flip_distance)*len(flip_distance[0]),device=glv.device)
+    dim4 = torch.tensor(list(range(len(flip_distance[0,0,0])))*len(flip_distance)*len(flip_distance[0])*len(flip_distance[0,0]),device=glv.device)
     dim5 = sorted_index[:,:,:,:,0].reshape(len(dim1))
     new_output = current_output>0
     near_by = flip_distance[dim1,dim2,dim3,dim4,dim5]<max_dist
@@ -42,18 +39,18 @@ def classify_changes(str1, str2):
     # str2 is the new spike sequence
     time_steps = len(str1[0,0,0,0])
     paired_flag = False # prevent pairs overlap
-    dim1 = [val for val in list(range(len(str1))) for i in 
-            range(len(str1[0])*len(str1[0,0])*len(str1[0,0,0]))] 
-    dim2 = [val for val in list(range(len(str1[0]))) for i in 
-            range(len(str1[0,0])*len(str1[0,0,0]))]*len(str1)
-    dim3 = [val for val in list(range(len(str1[0,0]))) for i in 
-            range(len(str1[0,0,0]))]*len(str1)*len(str1[0])
-    dim4 = list(range(len(str1[0,0,0])))*len(str1)*len(str1[0])*len(str1[0,0])
+    dim1 = torch.tensor([val for val in list(range(len(str1))) for i in 
+            range(len(str1[0])*len(str1[0,0])*len(str1[0,0,0]))],device=glv.device)
+    dim2 = torch.tensor([val for val in list(range(len(str1[0]))) for i in 
+            range(len(str1[0,0])*len(str1[0,0,0]))]*len(str1),device=glv.device)
+    dim3 = torch.tensor([val for val in list(range(len(str1[0,0]))) for i in 
+            range(len(str1[0,0,0]))]*len(str1)*len(str1[0]),device=glv.device)
+    dim4 = torch.tensor(list(range(len(str1[0,0,0])))*len(str1)*len(str1[0])*len(str1[0,0]),device=glv.device)
     str1_bool = str1>0
     str2_bool = str2>0
     changes = str1_bool^str2_bool
     for i in range(time_steps-1):
-        dim5 = torch.tensor([i]*len(dim1))
+        dim5 = torch.tensor([i]*len(dim1),device=glv.device)
         spike_move = (changes[dim1,dim2,dim3,dim4,dim5] & changes[dim1,dim2,dim3,dim4,dim5+1] & \
                       (str1_bool[dim1,dim2,dim3,dim4,dim5+1] ^ str1_bool[dim1,dim2,dim3,dim4,dim5]) & \
                       (str2_bool[dim1,dim2,dim3,dim4,dim5+1] ^ str2_bool[dim1,dim2,dim3,dim4,dim5]))
