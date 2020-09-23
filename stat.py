@@ -6,8 +6,8 @@ import torch
 # The return valur is the nearest neighbor
 # Expecting data format is torch.tensor
 def find_smallest_one(current_output, membrane_potential):
-    time_steps = len(current_output[0,0,0,0])
-    max_dist = 0.2
+    time_steps = torch.tensor(len(current_output[0,0,0,0]), device=glv.device)
+    max_dist = torch.tensor(0.2, device=glv.device)
     flip_distance = torch.clamp(torch.abs(1-membrane_potential),0,1)
     sorted_index = torch.argsort(flip_distance)
     dim1 = torch.tensor([val for val in list(range(len(flip_distance))) for i in range(len(flip_distance[0])*len(flip_distance[0,0])*len(flip_distance[0,0,0]))],device=glv.device)
@@ -37,8 +37,7 @@ def find_smallest_one(current_output, membrane_potential):
 def classify_changes(str1, str2):
     # str1 is the original spike sequence
     # str2 is the new spike sequence
-    time_steps = len(str1[0,0,0,0])
-    paired_flag = False # prevent pairs overlap
+    time_steps = torch.tensor(len(str1[0,0,0,0]), device=glv.device)
     dim1 = torch.tensor([val for val in list(range(len(str1))) for i in 
             range(len(str1[0])*len(str1[0,0])*len(str1[0,0,0]))],device=glv.device)
     dim2 = torch.tensor([val for val in list(range(len(str1[0]))) for i in 
