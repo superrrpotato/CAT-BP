@@ -5,27 +5,40 @@ import torch
 # The two inputs are the current time step's spike train output, and the current membrane potential
 # The return valur is the nearest neighbor
 # Expecting data format is torch.tensor
-def find_smallest_one(current_output, membrane_potential):
-    time_steps = torch.tensor(len(current_output[0,0,0,0]), device=glv.device)
-    max_dist = torch.tensor(0.2, device=glv.device)
-    flip_distance = torch.clamp(torch.abs(1-membrane_potential),0,1)
-    sorted_index = torch.argsort(flip_distance)
-    dim1 = torch.tensor([val for val in list(range(len(flip_distance))) for i in range(len(flip_distance[0])*len(flip_distance[0,0])*len(flip_distance[0,0,0]))],device=glv.device)
-    dim2 = torch.tensor([val for val in list(range(len(flip_distance[0]))) for i in range(len(flip_distance[0,0])*len(flip_distance[0,0,0]))]*len(flip_distance),device=glv.device)
-    dim3 = torch.tensor([val for val in list(range(len(flip_distance[0,0]))) for i in range(len(flip_distance[0,0,0]))]*len(flip_distance)*len(flip_distance[0]),device=glv.device)
-    dim4 = torch.tensor(list(range(len(flip_distance[0,0,0])))*len(flip_distance)*len(flip_distance[0])*len(flip_distance[0,0]),device=glv.device)
-    dim5 = sorted_index[:,:,:,:,0].reshape(len(dim1))
-    new_output = current_output>0
-    near_by = flip_distance[dim1,dim2,dim3,dim4,dim5]<max_dist
+def find_smallest_one(outputs, u):
+    time_steps = len(outputs[0,0,0,0])
+    max_dist = 0.2
+    flip_dist = torch.clamp(torch.abs(1-u),0,1)
+    sorted_index = torch.argmin(flip_dist, dim=-1)
+    if u.shape not in glv.dims_dict:
+        dim1 = torch.tensor([val for val in list(range(len(u))) for i in\
+            range(len(u[0])*len(u[0,0])*len(u[0,0,0]))], device = glv.device)
+        dim2 = torch.tensor([val for val in list(range(len(u[0]))) for i in\
+            range(len(u[0,0])*len(u[0,0,0]))]*len(u), device = glv.device)
+        dim3 = torch.tensor([val for val in list(range(len(u[0,0]))) for i in\
+            range(len(u[0,0,0]))]*len(u)*len(u[0]), device = glv.device)
+        dim4 =\
+            torch.tensor(list(range(len(u[0,0,0])))*len(u)*len(u[0])*len(u[0,0]),\
+            device = glv.device)
+        glv.dims_dict[u.shape] = [dim1,dim2,dim3,dim4]
+    else:
+        dim1 = glv.dims_dict[u.shape][0]
+        dim2 = glv.dims_dict[u.shape][1]
+        dim3 = glv.dims_dict[u.shape][2]
+        dim4 = glv.dims_dict[u.shape][3]
+    dim5 = sorted_index.reshape(len(dim1))
+    new_output = outputs>0
+    near_by = flip_dist[dim1,dim2,dim3,dim4,dim5]<max_dist
     while near_by.any() == True:
         new_output[dim1,dim2,dim3,dim4,dim5]=new_output[dim1,dim2,dim3,dim4,dim5]^near_by
         near_by = near_by & (dim5!=time_steps-1)
         dim5 = torch.clamp(dim5+1,0,time_steps-1)
-        nopp = new_output[dim1,dim2,dim3,dim4,dim5-1] # new output previous pointer
-        mpp = membrane_potential[dim1,dim2,dim3,dim4,dim5] # membrane potential pointer
+        nopp = new_output[dim1,dim2,dim3,dim4,dim5-1]
+        mpp = u[dim1,dim2,dim3,dim4,dim5]
         near_by = near_by & ((near_by&(nopp==1)&((1<=mpp)&(mpp<1.8)))|\
                             (near_by&(nopp==0)&((0.2<mpp)&(mpp<1))))
     return new_output
+
 
 # This function is used to detect changes which are spike adding/removing
 # Following the same idea like Hamming distance/Damerau-Levenshtein Distance, the "Spikes distance" 
