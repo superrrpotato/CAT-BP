@@ -51,13 +51,10 @@ def classify_changes(str1, str2):
     # str1 is the original spike sequence
     # str2 is the new spike sequence
     time_steps = torch.tensor(len(str1[0,0,0,0]), device=glv.device)
-    dim1 = torch.tensor([val for val in list(range(len(str1))) for i in 
-            range(len(str1[0])*len(str1[0,0])*len(str1[0,0,0]))],device=glv.device)
-    dim2 = torch.tensor([val for val in list(range(len(str1[0]))) for i in 
-            range(len(str1[0,0])*len(str1[0,0,0]))]*len(str1),device=glv.device)
-    dim3 = torch.tensor([val for val in list(range(len(str1[0,0]))) for i in 
-            range(len(str1[0,0,0]))]*len(str1)*len(str1[0]),device=glv.device)
-    dim4 = torch.tensor(list(range(len(str1[0,0,0])))*len(str1)*len(str1[0])*len(str1[0,0]),device=glv.device)
+    dim1 = glv.dims_dict[str1.shape][0]
+    dim2 = glv.dims_dict[str1.shape][1]
+    dim3 = glv.dims_dict[str1.shape][2]
+    dim4 = glv.dims_dict[str1.shape][3]
     str1_bool = str1>0
     str2_bool = str2>0
     changes = str1_bool^str2_bool
