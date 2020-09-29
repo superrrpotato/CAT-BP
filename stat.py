@@ -59,7 +59,10 @@ def classify_changes(str1, str2):
     str2_bool = str2>0
     changes = str1_bool^str2_bool
     for i in range(time_steps-1):
-        dim5 = torch.tensor([i]*len(dim1),device=glv.device)
+        if str(len(dim1))+'_'+str(i) not in glv.dims_dict:
+            glv.dims_dict[str(len(dim1))+'_'+str(i)] = \
+            torch.tensor([i]*len(dim1),device=glv.device)
+        dim5 = glv.dims_dict[str(len(dim1))+'_'+str(i)]
         spike_move = (changes[dim1,dim2,dim3,dim4,dim5] & changes[dim1,dim2,dim3,dim4,dim5+1] & \
                       (str1_bool[dim1,dim2,dim3,dim4,dim5+1] ^ str1_bool[dim1,dim2,dim3,dim4,dim5]) & \
                       (str2_bool[dim1,dim2,dim3,dim4,dim5+1] ^ str2_bool[dim1,dim2,dim3,dim4,dim5]))
